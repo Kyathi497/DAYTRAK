@@ -1,80 +1,121 @@
-'use client'
+"use client";
 
 import { Activity, CATEGORY_COLOR, PRIORITY_COLOR } from "@/types";
 import { cn } from "@/lib/utils";
 import StatusBadge from "./StatusBadge";
 import { Button } from "../ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pause, SkipForward, Check } from "lucide-react";
 
-
+// types — onToggle now takes target status
 type Props = {
-    activity: Activity
-    onToggle: (id:string, status: Activity['status'])=>void
-    onDelete: (id:string)=>void
+  activity: Activity;
+  onToggle: (id: string, targetStatus: Activity["status"]) => void;
+  onDelete: (id: string) => void;
+};
+
+function fmt12(time: string | null) {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-function fmt12(time: string|null){
-    if (!time) return null
-    const [h,m] = time.split(':').map(Number)
-    const ampm = h>=12 ? 'PM':'AM'
+export default function ActivityCard({ activity, onToggle, onDelete }: Props) {
+  const { id, name, startTime, endTime, category, priority, status } = activity;
 
-    return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`
-}
+  const catColor = CATEGORY_COLOR[category];
+  const priColor = PRIORITY_COLOR[priority];
 
-export default function ActivityCard({activity, onToggle, onDelete}: Props){
+  const isDone = status === "DONE";
+  const isSkipped = status === "SKIPPED";
+  const isInProgress = status === "IN_PROGRESS";
 
-    const {id, name, startTime, endTime, category, priority, status } = activity
+  function handleCheck() {
+    onToggle(id, isDone ? "PENDING" : "DONE");
+  }
 
-    const catColor = CATEGORY_COLOR[category]
-    const priColor = PRIORITY_COLOR[priority]
+  function handlePause() {
+    onToggle(id, isInProgress ? "PENDING" : "IN_PROGRESS");
+  }
 
-    const isDone    = status === 'DONE'
-    const isSkipped = status === 'SKIPPED'
+  function handleSkip() {
+    onToggle(id, isSkipped ? "PENDING" : "SKIPPED");
+  }
 
-    return (
-    <div className={cn(
-      'group relative bg-card border border-border rounded-xl p-4',
-      'flex items-center gap-4 transition-all duration-200',
-      'hover:border-zinc-600',
-      isDone    && 'opacity-60',
-      isSkipped && 'opacity-40',
-    )}>
-
+  return (
+    <div
+      className={cn(
+        "group relative bg-card border border-border rounded-xl p-4",
+        "flex items-center gap-4 transition-all duration-200",
+        "hover:border-zinc-600",
+        isDone && "opacity-60",
+        isSkipped && "opacity-40",
+      )}
+    >
       {/* Category colour strip */}
       <div
         className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
         style={{ backgroundColor: catColor }}
       />
 
-      {/* Main content */}
-      <div className="flex-1 min-w-0 pl-2">
+      {/* ── Checkbox ── */}
+      <button
+        onClick={handleCheck}
+        className={cn(
+          "shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200",
+          isDone
+            ? "bg-green-500 border-green-500"
+            : "border-zinc-600 hover:border-green-500 bg-transparent",
+        )}
+      >
+        {isDone && <Check size={12} strokeWidth={3} className="text-black" />}
+      </button>
+
+      {/* ── Main content ── */}
+      <div className="flex-1 min-w-0">
+        {/* Name row — with pause button inline */}
         <div className="flex items-center gap-2 mb-1">
-          <span className={cn(
-            'font-medium text-sm truncate',
-            isDone && 'line-through text-muted-foreground'
-          )}>
+          <span
+            className={cn(
+              "font-medium text-sm truncate",
+              isDone && "line-through text-muted-foreground",
+              isSkipped && "line-through text-muted-foreground",
+            )}
+          >
             {name}
           </span>
+
+          {/* Pause button — sits right after the name */}
+          <button
+            onClick={handlePause}
+            title={isInProgress ? "Pause (set to Pending)" : "Set In Progress"}
+            className={cn(
+              "shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200",
+              isInProgress
+                ? "bg-blue-500 text-white"
+                : "text-zinc-600 hover:text-blue-400 hover:bg-blue-950",
+            )}
+          >
+            <Pause size={10} strokeWidth={2.5} />
+          </button>
+
           <StatusBadge status={status} />
         </div>
 
+        {/* Meta row */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Time range */}
           {startTime && (
             <span className="text-xs font-mono text-primary">
-              {fmt12(startTime)}{endTime ? ` → ${fmt12(endTime)}` : ''}
+              {fmt12(startTime)}
+              {endTime ? ` → ${fmt12(endTime)}` : ""}
             </span>
           )}
-
-          {/* Category */}
           <span
             className="text-xs font-medium uppercase tracking-wide"
             style={{ color: catColor }}
           >
             {category}
           </span>
-
-          {/* Priority dot */}
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <span
               className="w-1.5 h-1.5 rounded-full inline-block"
@@ -85,27 +126,34 @@ export default function ActivityCard({activity, onToggle, onDelete}: Props){
         </div>
       </div>
 
-      {/* Actions */}
+      {/* ── Actions ── */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Skip button */}
         <Button
           size="sm"
           variant="outline"
-          className="text-xs h-7 px-3"
-          onClick={() => onToggle(id, status)}
+          className={cn(
+            "text-xs h-7 px-3 gap-1.5",
+            isSkipped
+              ? "border-red-800 text-red-400 hover:bg-red-950"
+              : "text-muted-foreground hover:text-red-400 hover:border-red-800",
+          )}
+          onClick={handleSkip}
         >
-          {isDone ? '↩ Undo' : '→ Next'}
+          <SkipForward size={12} />
+          {isSkipped ? "Undo Skip" : "Skip"}
         </Button>
 
+        {/* Delete */}
         <Button
           size="icon"
           variant="ghost"
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+          className="h-7 w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
           onClick={() => onDelete(id)}
         >
           <Trash2 size={14} />
         </Button>
       </div>
     </div>
-  )
-
+  );
 }

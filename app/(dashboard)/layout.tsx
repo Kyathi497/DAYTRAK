@@ -6,14 +6,22 @@ import { Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// helper component to display current time
+// helper component to display current time (client-only)
 function TimeDisplay() {
-  const [now, setNow] = useState(new Date());
+  // start with null so server render outputs nothing
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    // set immediately on client
+    setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  if (!now) {
+    // don't render time on server / before hydration
+    return null;
+  }
 
   const time = now.toLocaleTimeString([], { hour12: false });
   const date = now.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
@@ -21,9 +29,9 @@ function TimeDisplay() {
   return (
     <div className="flex flex-col items-end text-right">
       <span className="text-sm font-mono text-lime-300">{time}</span>
-      <span className="text-xs text-muted-foreground hidden text-lime-300 sm:block">{date}</span>
+        <span className="text-xs text-muted-foreground  text-lime-300 sm:block">{date}</span>
     </div>
-  );
+  )
 }
 
 export default function DashboardLayout({

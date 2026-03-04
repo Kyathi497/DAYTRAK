@@ -30,12 +30,12 @@ export type WeekDay = {
   byCategory:    Record<string, number>
 }
 
-// Status cycle order for toggling
-export const STATUS_CYCLE: Record<Status, Status> = {
-  PENDING:     'IN_PROGRESS',
-  IN_PROGRESS: 'DONE',
-  DONE:        'SKIPPED',
-  SKIPPED:     'PENDING',
+// Status cycle order for TARGET
+export const STATUS_TARGET: Record<string, Status> = {
+  CHECK:  'DONE',
+  PAUSE:  'IN_PROGRESS',
+  SKIP:   'SKIPPED',
+  UNDO:   'PENDING',
 }
 
 // Display helpers
